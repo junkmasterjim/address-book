@@ -29,7 +29,6 @@ const MENU_STRING = "-------Main Menu-------\r\n" +
 
 func main(){
   contacts := parseFile(DB_PATH)
-
   for {
     switch getCharInput(MENU_STRING){
     case "q":
@@ -52,10 +51,16 @@ func main(){
   }
 }
 
+// parse DB file and create if it doesnt exist
 func parseFile(input string) ([]Contact){
   file, err := os.Open(input)
   if err != nil{
-    log.Fatal(err)
+    f, e := os.Create(input)
+    if e != nil {
+    	log.Fatal(e)  // this is just insane
+    }
+    // create file if not found
+    f.Write([]byte("First Name,Last Name,Phone Number,Email\n"))
   }
   s := bufio.NewScanner(file)
   lineNum := 0
@@ -75,6 +80,7 @@ func parseFile(input string) ([]Contact){
   return contacts
 }
 
+// appends string to file
 func appendToFile(path string, toAppend string){
   f, _ := os.Open(path)
   s := bufio.NewScanner(f)
@@ -89,6 +95,8 @@ func appendToFile(path string, toAppend string){
   f.Close()
 }
 
+// set terminal to raw mode and reads single keypress input from a user
+// prompts the user with the prompt parameter
 func getCharInput(prompt string) string{
   oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
   if err != nil {
@@ -107,7 +115,8 @@ func getCharInput(prompt string) string{
   return string(charPressed)
 }
 
-
+// returns a new contact based on user input
+// i can clean this up using a different flow logic
 func newContact() Contact{
   r:= bufio.NewReader(os.Stdin)
  
