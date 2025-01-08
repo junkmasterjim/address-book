@@ -19,12 +19,19 @@ type Contact struct {
 }
 
 const DB_PATH = "db.csv"
+const MENU_STRING = "-------Main Menu-------\r\n" +
+		    "(a)dd a contact\r\n" +
+		    "(s)how all contacts\r\n" +
+		    "(d)elete a contact\r\n" +
+		    "(e)dit a contact\r\n" +
+		    "(q)uit\r\n" +
+		    "------------------------\r"
 
 func main(){
   contacts := parseFile(DB_PATH)
 
   for {
-    switch getCharInput("-------Main Menu-------\r\n(q)uit\r\n(a)dd a contact\r\n(s)how all contacts\r\n(d)elete a contact\r\n(e)dit a contact\r\n------------------------\r"){
+    switch getCharInput(MENU_STRING){
     case "q":
       fmt.Print("Good bye\r\n\n")
       os.Exit(0)
