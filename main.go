@@ -7,10 +7,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
 const DB_PATH = "db.csv"
+const CURSOR_CHAR = "=>"
 
 // Represents a contact in the address book.
 type Contact struct {
@@ -25,6 +27,7 @@ type Model struct {
   choices   []string
   cursor    int
   contacts  []Contact
+  input	    textinput.Model
   state_map map[string]int
   state	    int	// 0 - main
 		// 1 - add a contact
@@ -38,7 +41,7 @@ func initModel() Model {
   return Model{
     choices: []string{
       "a - add a contact", 
-      "v - view contacts", 
+      "s - show contacts", 
       "d - delete a contact",
       "e - edit a contact",
       "q - quit",
@@ -48,7 +51,7 @@ func initModel() Model {
     state_map: map[string]int{
       "": 0,
       "a": 1,
-      "v": 2,
+      "s": 2,
       "d": 3,
       "e": 4,
     },
@@ -76,62 +79,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
   switch msg := msg.(type){
   case tea.KeyMsg : // Key press
-    switch msg.String() { // Which key was pressed?
-    case "ctrl-c", "q": // Quit the application
-      switch m.state {
-      case 0: // Main menu
-	return m, tea.Quit
+    switch m.state { // Check menu state
+    case 0: // Main menu
+      return m.handleMainMenu(msg)
 
-      default: // Sub-menu. return to main menu
-	m.state = 0
-	return m, nil
-      }
-
-    case "up", "k": // Move the cursor up
-      if m.cursor > 0 {
-	m.cursor--
-      } else {
-	switch m.state {
-	case 0:
-	  m.cursor = len(m.choices) - 1
-	case 2, 3, 4:
-	  m.cursor = len(m.contacts) - 1
-	}
-      }
-
-    case "down", "j": // Move the cursor down
-      switch m.state {
-      case 0: 
-	if m.cursor < len(m.choices) - 1 {
-	  m.cursor++
-	} else {
-	  m.cursor = 0
-	}
-
-      case 2, 3, 4:
-	if m.cursor < len(m.contacts) - 1 {
-	  m.cursor++
-	} else {
-	  m.cursor = 0
-	}
-      }
-
-    case "enter": // Select an option
-      switch m.state {
-      case 0:
-	opt := strings.Split(m.choices[m.cursor], "")[0]
-	switch opt {
-	case "a", "v", "d", "e":
-	  m.state = m.state_map[opt]
-	case "q":
-	  cmd = tea.Quit
-	}
-
-      case 2, 3, 4:
-
-      }
-
-    m.cursor = 0
+    case 1:
+      return m.handleSubMenu(msg)
+    case 2, 3, 4:
+      return m.handleSubMenu(msg)
+    default:
+      break
     }
   }
   return m, cmd
@@ -146,16 +103,13 @@ func (m Model) View() string {
   case 0: // Print the main menu
     // Initial string header
     s = "--- Main Menu ---\n\n"
-    
     // Iterate over our choices
     for i, choice := range m.choices {
-  
       // Is the cursor pointing at this choice?
       cursor := " " // no cursor
       if m.cursor == i {
-        cursor = ">" // cursor!
+        cursor = CURSOR_CHAR // cursor!
       }
-  
       // Render the row
       s += fmt.Sprintf("%s %s\n", cursor, choice)
     }
@@ -174,7 +128,7 @@ func (m Model) View() string {
     for i, contact := range m.contacts {
       cursor := " "
       if m.cursor == i {
-	cursor = ">"
+	cursor = CURSOR_CHAR
       }
 
       s += fmt.Sprintf("%s %s, %s\n", cursor, contact.LastName, contact.FirstName)
@@ -195,6 +149,89 @@ func main(){
     fmt.Printf("There was an error: %v", err)
     os.Exit(1)
   }
+}
+
+// --- Model Helpers ---------------
+
+func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+  key := msg.String()
+  switch key {
+  case "ctrl-c", "q":
+    return m, tea.Quit
+
+  case "a":
+    m.state = m.state_map[key]
+  case "s":
+    m.state = m.state_map[key]
+  case "d":
+    m.state = m.state_map[key]
+  case "e":
+    m.state = m.state_map[key]
+  
+  case "j", "down":
+    if m.cursor < len(m.choices) - 1 {
+      m.cursor++
+    } else {
+      m.cursor = 0
+    }
+    
+  case "k", "up":
+    if m.cursor > 0 {
+      m.cursor--
+    } else{
+      m.cursor = len(m.choices) - 1
+    }
+  
+
+  case "enter":
+    opt := strings.Split(m.choices[m.cursor], "")[0]
+    switch opt {
+      case "a", "s", "d", "e":
+	m.state = m.state_map[opt]
+	m.cursor = 0
+      case "q":
+	return m, tea.Quit
+    }
+  }
+
+  return m, nil
+}
+
+func (m Model) handleSubMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd){
+  key := msg.String()
+  switch key{
+  case "ctrl-c":
+    return m, tea.Quit
+
+  case "q":
+    m.state = 0
+    m.cursor = 0
+    return m, nil
+  
+  case "j", "down":
+    if m.cursor < len(m.contacts) - 1 {
+      m.cursor++
+    } else {
+      m.cursor = 0
+    }
+  
+  case "k", "up":
+    if m.cursor > 0 {
+      m.cursor--
+    } else {
+      m.cursor = len(m.contacts) - 1
+    }
+
+  case "enter":
+    switch m.state{
+    case 3: // delete contact
+      // remove contact from file and the model will update on parse
+    case 4: // edit contact
+      // edit contact in file and the model will update on parse
+    }
+  }
+
+  return m, nil
 }
 
 // --- Helper Functions ------------
@@ -242,29 +279,4 @@ func appendToFile(path string, toAppend string){
   os.WriteFile(path, []byte(fc),  0666)
   f.Close()
 }
-
-// returns a new contact based on user input
-// i can clean this up using a different logic flow
-func newContact() *Contact{
-  r:= bufio.NewReader(os.Stdin)
- 
-  fmt.Print("First name: ")
-  first, _, _:= r.ReadLine()
-  fn := string(first)
-
-  fmt.Print("Last name: ")
-  last, _, _ := r.ReadLine()
-  ln := string(last)
-
-  fmt.Print("Phone number: ")
-  phone, _, _ := r.ReadLine()
-  ph := string(phone)
-
-  fmt.Print("Email: ")
-  email, _, _ := r.ReadLine()
-  em := string(email)
-  
-  return &Contact{fn, ln, ph, em}
-}
-
 
