@@ -28,7 +28,7 @@ type Model struct {
   cursor    int
   contacts  []Contact
   input	    textinput.Model
-  state_map map[string]int
+  smap	    map[string]int
   state	    int	// 0 - main
 		// 1 - add a contact
 		// 2 - view contacts
@@ -37,8 +37,8 @@ type Model struct {
 }
 
 // Returns an initial model for use in the program.
-func initModel() Model {
-  return Model{
+func initModel() *Model {
+  return &Model{
     choices: []string{
       "a - add a contact", 
       "s - show contacts", 
@@ -48,7 +48,7 @@ func initModel() Model {
     },
     cursor: 0,
     contacts: []Contact{},
-    state_map: map[string]int{
+    smap: map[string]int{
       "": 0,
       "a": 1,
       "s": 2,
@@ -84,11 +84,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
       return m.handleMainMenu(msg)
 
     case 1:
-      return m.handleSubMenu(msg)
+      return m.handleAddContact(msg)
+      // return m.handleSubMenu(msg)
+
     case 2, 3, 4:
       return m.handleSubMenu(msg)
-    default:
-      break
     }
   }
   return m, cmd
@@ -100,7 +100,7 @@ func (m Model) View() string {
   var s string
 
   switch m.state {
-  case 0: // Print the main menu
+  case m.smap[""]: // Print the main menu
     // Initial string header
     s = "--- Main Menu ---\n\n"
     // Iterate over our choices
@@ -115,15 +115,21 @@ func (m Model) View() string {
     }
   
     
-  case 2, 3, 4: // Select a contact
+  default: // anything but the main menu state
     switch m.state {
-    case 2:
+    case m.smap["a"]:
+      return fmt.Sprintf("Add a new contact\n%s\n%s", m.input.View(), "[esc to cancel]")
+      return "'add contact' not ready yet\npress q to return to menu\n\n"
+    case m.smap["s"]:
       s = "--- All Contacts ---\n\n"
-    case 3:
+    case m.smap["d"]:
+      return "'delete contact 'not ready yet\npress q to return to menu\n\n"
       s = "--- Delete a Contact ---\n\n"
-    case 4:
+    case m.smap["e"]:
+      return "'edit contact' not ready yet\npress q to return to menu\n\n"
       s = "--- Edit a Contact ---\n\n"
     }
+
 
     for i, contact := range m.contacts {
       cursor := " "
@@ -142,9 +148,8 @@ func (m Model) View() string {
   return s
 }
 
-
 func main(){
-  p := tea.NewProgram(initModel())
+  p := tea.NewProgram(initModel(), tea.WithAltScreen())
   if _, err := p.Run(); err != nil {
     fmt.Printf("There was an error: %v", err)
     os.Exit(1)
@@ -152,21 +157,46 @@ func main(){
 }
 
 // --- Model Helpers ---------------
+func (m *Model) reset() {
+  m.state = 0
+  m.cursor = 0
+}
+
+func (m Model) handleAddContact(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+  var cmd tea.Cmd = nil
+  key := msg.String()
+
+  m.input = textinput.New()
+  m.input.Placeholder = "First Name"
+  m.input.Focus()
+  m.input.CharLimit = 15
+  m.input.Width = 20
+  
+  switch key {
+  case "esc":
+    m.reset()
+  }
+  
+  m.input, cmd = m.input.Update(msg)
+  return m, cmd
+}
 
 func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
   key := msg.String()
+  var cmd tea.Cmd = nil
+
   switch key {
   case "ctrl-c", "q":
     return m, tea.Quit
 
   case "a":
-    m.state = m.state_map[key]
+    m.state = m.smap[key]
   case "s":
-    m.state = m.state_map[key]
+    m.state = m.smap[key]
   case "d":
-    m.state = m.state_map[key]
+    m.state = m.smap[key]
   case "e":
-    m.state = m.state_map[key]
+    m.state = m.smap[key]
   
   case "j", "down":
     if m.cursor < len(m.choices) - 1 {
@@ -187,14 +217,14 @@ func (m Model) handleMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
     opt := strings.Split(m.choices[m.cursor], "")[0]
     switch opt {
       case "a", "s", "d", "e":
-	m.state = m.state_map[opt]
+	m.state = m.smap[opt]
 	m.cursor = 0
       case "q":
 	return m, tea.Quit
     }
   }
 
-  return m, nil
+  return m, cmd
 }
 
 func (m Model) handleSubMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd){
@@ -224,9 +254,9 @@ func (m Model) handleSubMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd){
 
   case "enter":
     switch m.state{
-    case 3: // delete contact
+    case m.smap["d"]: // delete contact
       // remove contact from file and the model will update on parse
-    case 4: // edit contact
+    case m.smap["e"]: // edit contact
       // edit contact in file and the model will update on parse
     }
   }
