@@ -53,7 +53,7 @@ func (m menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "q":
 				return m, tea.Quit
 			case "s", "e", "d":
-				m.table = tableModel{buildTable(m.contacts), s, &m}
+				m.table = tableModel{buildTable(m.contacts), s, &m, contactForm{}}
 				return m.table, cmd
 			}
 
@@ -73,8 +73,12 @@ func (m menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyCtrlC.String(), "q":
 			return m, tea.Quit
 
-		case "s", "e", "d":
-			m.table = tableModel{buildTable(m.contacts), m.selection, &m}
+		case "s":
+			m.table = tableModel{
+				table: buildTable(m.contacts),
+				mode:  m.selection,
+				menu:  &m,
+			}
 			return m.table, cmd
 		}
 	}

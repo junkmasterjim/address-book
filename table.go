@@ -10,6 +10,7 @@ type tableModel struct {
 	table table.Model
 	mode  string
 	menu  *menu
+	form  contactForm
 }
 
 func (m tableModel) Init() tea.Cmd {
@@ -21,14 +22,27 @@ func (m tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "esc":
-			return m.menu, cmd
-		}
+		key := msg.String()
 
-		switch m.mode {
-		case "d":
+		switch key {
+		case tea.KeyEnter.String(), "q", "esc":
+			return m.menu, cmd
+
 		case "e":
+			f := []string{
+				"First name: ",
+				"Last name: ",
+				"Phone number: ",
+				"Email: ",
+			}
+			m.form = contactForm{
+				fields: f,
+				table:  &m,
+			}
+			return m.form, cmd
+
+		case "d":
+
 		}
 	}
 
@@ -37,23 +51,11 @@ func (m tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m tableModel) View() string {
-	switch m.mode {
-	case "d":
-		return "Select a contact to delete\n\n" +
-			m.table.View() +
-			"\n\n q - return to main menu" +
-			"\n enter - select"
-
-	case "e":
-		return "Select a contact to edit\n\n" +
-			m.table.View() +
-			"\n\n q - return to main menu" +
-			"\n enter - select"
-	}
-
 	return "Browsing contacts\n\n" +
 		m.table.View() +
-		"\n\n q - return to main menu"
+		"\n\nenter, q - return to main menu" +
+		"\ne - edit contact" +
+		"\nd - delete contact"
 }
 
 func buildTable(contacts []Contact) table.Model {
