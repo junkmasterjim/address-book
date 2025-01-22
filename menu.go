@@ -69,6 +69,7 @@ func (m menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.table, cmd
 
 		case "a":
+			return InitAddContactForm(&m), cmd
 		}
 	}
 
