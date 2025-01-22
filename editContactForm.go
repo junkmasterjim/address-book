@@ -6,18 +6,18 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type contactForm struct {
+type editContactForm struct {
 	fields  []string
 	answers map[string]string
 	done    bool
 	table   *tableModel
 }
 
-func (c contactForm) Init() tea.Cmd {
+func (c editContactForm) Init() tea.Cmd {
 	return nil
 }
 
-func (c contactForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (c editContactForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -31,7 +31,20 @@ func (c contactForm) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return c, cmd
 }
 
-func (c contactForm) View() string {
+func (c editContactForm) View() string {
 	s := strings.Join(c.fields, ", ")
 	return s
+}
+
+func InitEditContactForm(m *menu) editContactForm {
+	f := []string{
+		"First name: ",
+		"Last name: ",
+		"Phone number: ",
+		"Email: ",
+	}
+	return editContactForm{
+		fields: f,
+		table:  &m.table,
+	}
 }

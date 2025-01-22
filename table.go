@@ -10,14 +10,14 @@ type tableModel struct {
 	table table.Model
 	mode  string
 	menu  *menu
-	form  contactForm
+	form  editContactForm
 }
 
-func (m tableModel) Init() tea.Cmd {
+func (t tableModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (t tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -26,33 +26,24 @@ func (m tableModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		switch key {
 		case tea.KeyEnter.String(), "q", "esc":
-			return m.menu, cmd
+			return t.menu, cmd
 
 		case "e":
-			f := []string{
-				"First name: ",
-				"Last name: ",
-				"Phone number: ",
-				"Email: ",
-			}
-			m.form = contactForm{
-				fields: f,
-				table:  &m,
-			}
-			return m.form, cmd
+			t.form = InitEditContactForm(t.menu)
+			return t.form, cmd
 
 		case "d":
 
 		}
 	}
 
-	m.table, cmd = m.table.Update(msg)
-	return m, cmd
+	t.table, cmd = t.table.Update(msg)
+	return t, cmd
 }
 
-func (m tableModel) View() string {
+func (t tableModel) View() string {
 	return "Browsing contacts\n\n" +
-		m.table.View() +
+		t.table.View() +
 		"\n\nenter, q - return to main menu" +
 		"\ne - edit contact" +
 		"\nd - delete contact"

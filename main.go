@@ -23,83 +23,21 @@ type Contact struct {
 	Email       string
 }
 
-type menu struct {
-	choices   []string
-	cursor    int
-	contacts  []Contact
-	selection string
-	table     tableModel
-}
+func main() {
+	menu := InitMainMenu()
 
-func (m menu) Init() tea.Cmd {
-	return func() tea.Msg {
-		m.contacts = parseFile(DB_PATH)
-		return "Success"
-	}
-}
-
-func (m menu) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	m.contacts = parseFile(DB_PATH)
-	var cmd tea.Cmd
-
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		m.selection = msg.String()
-
-		switch m.selection {
-		case tea.KeyEnter.String():
-			s := string(m.choices[m.cursor][0])
-			switch s {
-			case "q":
-				return m, tea.Quit
-			case "s", "e", "d":
-				m.table = tableModel{buildTable(m.contacts), s, &m, contactForm{}}
-				return m.table, cmd
-			}
-
-		case tea.KeyDown.String(), "j":
-			if m.cursor < len(m.choices)-1 {
-				m.cursor++
-			} else {
-				m.cursor = 0
-			}
-		case tea.KeyUp.String(), "k":
-			if m.cursor > 0 {
-				m.cursor--
-			} else {
-				m.cursor = len(m.choices) - 1
-			}
-
-		case tea.KeyCtrlC.String(), "q":
-			return m, tea.Quit
-
-		case "s":
-			m.table = tableModel{
-				table: buildTable(m.contacts),
-				mode:  m.selection,
-				menu:  &m,
-			}
-			return m.table, cmd
-		}
+	if _, err := tea.NewProgram(menu, tea.WithAltScreen()).Run(); err != nil {
+		fmt.Println("Error running program:", err)
+		os.Exit(1)
 	}
 
-	return m, cmd
+	fmt.Println("good bye")
 }
 
-func (m menu) View() string {
-	s := "menu\n\n"
-	for i, c := range m.choices {
-		cursor := " "
-		if m.cursor == i {
-			cursor = CURSOR_CHAR
-		}
-		s += fmt.Sprintf("%s %s\n", cursor, c)
-	}
+/* HELPER FUNCTIONS */
 
-	return s
-}
-
-// Parse file at i, create file if it doesnt exist. Returns []Contact
+// Parse file at `path`, create file if it doesnt exist.
+// Returns a slice of contacts.
 func parseFile(path string) []Contact {
 	file, err := os.Open(path)
 	if err != nil {
@@ -128,36 +66,6 @@ func parseFile(path string) []Contact {
 	file.Close()
 	return contacts
 }
-
-func initMainMenu() *menu {
-	choices := []string{
-		"s - show contacts",
-		"a - add a contact",
-		"q - quit",
-	}
-	mainMenu := menu{
-		choices: choices,
-	}
-	return &mainMenu
-}
-
-func main() {
-	menu := initMainMenu()
-
-	if _, err := tea.NewProgram(menu, tea.WithAltScreen()).Run(); err != nil {
-		fmt.Println("Error running program:", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("good bye")
-}
-
-/*
-	needs work below
-	needs work below
-	needs work below
-	needs work below
-*/
 
 // Appends string `toAppend` to file at string `path`.
 func appendToFile(path string, toAppend string) {
